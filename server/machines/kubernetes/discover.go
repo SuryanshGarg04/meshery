@@ -37,14 +37,14 @@ func (da *DiscoverAction) Execute(ctx context.Context, machineCtx interface{}, d
 
 	err = k8sContext.AssignServerID(handler)
 	if err != nil {
-		return machines.NotFound, eventBuilder.WithDescription(fmt.Sprintf("Could not assign server id, skipping context %s", k8sContext.Name)).WithMetadata(map[string]interface{}{
+		return machines.Disconnect, eventBuilder.WithDescription(fmt.Sprintf("Could not assign server id, disconnecting context %s", k8sContext.Name)).WithMetadata(map[string]interface{}{
 			"error": err,
 		}).Build(), err
 	}
 
 	err = k8sContext.AssignVersion(handler)
 	if err != nil {
-		machinectx.log.Info("unable to set kubernes server version, continuing without assigning version")
+		machinectx.log.Info("unable to set kubernetes server version, continuing without assigning version")
 	}
 	token, _ := ctx.Value(models.TokenCtxKey).(string)
 
