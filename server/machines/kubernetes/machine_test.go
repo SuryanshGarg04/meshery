@@ -122,7 +122,7 @@ func TestDiscoverAction_ReturnsDisconnectWhenServerIDCannotBeAssigned(t *testing
 	}
 	user := &models.User{ID: core.Uuid(userID)}
 
-	sysID := core.Uuid(uuid.FromStringOrNil("00000000-0000-0000-0000-000000000000"))
+	sysID := core.Uuid(uuid.Nil)
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, models.UserCtxKey, user)
 	ctx = context.WithValue(ctx, models.SystemIDKey, &sysID)
