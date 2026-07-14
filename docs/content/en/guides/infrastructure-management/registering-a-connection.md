@@ -118,7 +118,22 @@ Kubernetes uses a dedicated flow because a single kubeconfig can describe many c
 </a>
 
 3. **Select contexts.** Choose which contexts to import. For each, you can override the Connection name and choose a [MeshSync deployment mode](#meshsync-deployment-mode).
+
+<a href="../images/connection-wizard-review-contexts.png">
+  <img
+    src="../images/connection-wizard-review-contexts.png"
+    alt="Review Kubernetes contexts before importing"
+    style="width:60%; max-width:800px;">
+</a>
+
 4. **Review Import.** Confirm your selection and import. Meshery creates one Connection per selected context and reports the outcome, grouped into connected, registered, ignored, and errored buckets.
+
+<a href="../images/connection-wizard-import-complete.png">
+  <img
+    src="../images/connection-wizard-import-complete.png"
+    alt="Kubernetes import completed successfully"
+    style="width:60%; max-width:800px;">
+</a>
 
 Each imported cluster is created as a Kubernetes Connection that [MeshSync]({{< ref "concepts/architecture/meshsync.md" >}}) keeps in sync. From there, Meshery can deploy and operate workloads, visualize the cluster, and more. See [Managing Connections]({{< ref "guides/infrastructure-management/lifecycle-management/index.md" >}}).
 
@@ -152,6 +167,8 @@ If you haven't already, install and configure `mesheryctl` by following the [Mes
 Once mesheryctl is installed, authenticate with `mesheryctl system login` and ensure you have a valid Kubernetes context configured. You can then register and manage Connections directly from the terminal.
 
 The CLI is well suited for terminal-based workflows, scripting, and automation where using the Connection Wizard is not required.
+
+Before creating a Kubernetes Connection with `mesheryctl`, ensure that you've completed the prerequisites for your Kubernetes provider. For example, GKE requires the `gcloud` CLI and EKS requires the AWS CLI. See the [Quick Start with Kubernetes]({{< ref "installation/kubernetes/_index.md" >}}) guide for provider-specific prerequisites and setup instructions.
 
 ### Create a Connection
 
