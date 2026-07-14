@@ -175,6 +175,7 @@ server: dep-check
 	PROVIDER_CAPABILITIES_FILEPATH=$(PROVIDER_CAPABILITIES_FILEPATH) \
 	APP_PATH=$(APPLICATIONCONFIGPATH) \
 	KEYS_PATH=$(KEYS_PATH) \
+	MESHSYNC_DEFAULT_DEPLOYMENT_MODE=$${MESHSYNC_DEFAULT_DEPLOYMENT_MODE:-operator} \
 	go run main.go error.go;
 
 ## Build and run Meshery Server with some Meshery Adapters on your local machine.
@@ -397,8 +398,7 @@ docs-build-production:
 
 ## Run Meshery Docs in a Docker container. Listen for changes.
 docs-docker:
-	cd docs; docker run --rm --name meshery-docs -p 1313:1313 -v `pwd`:/src -w /src ghcr.io/gohugoio/hugo:v0.157.0 server -D -F --bind 0.0.0.0
-
+	cd docs; docker run --rm --name meshery-docs -p 1313:1313 -v `pwd`:/src -w /src ghcr.io/gohugoio/hugo:v0.163.3 server -D -F --bind 0.0.0.0
 
 ## Build Meshery CLI docs
 docs-mesheryctl:
