@@ -1,23 +1,24 @@
 ---
-title: Registering a Connection
+title: Creating a Connection
 aliases:
+- /guides/infrastructure-management/registering-a-connection
 - /guides/infrastructure-management/connection-wizard
 - /guides/infrastructure-management/infrastructure-discovery
 - /connection-wizard
 categories: [infrastructure]
 weight: -5
-description: Use the Connection Wizard to create and update Connections - Kubernetes clusters, Grafana, Prometheus, and more - in your Meshery deployment.
+description: Create and update Connections - Kubernetes clusters, Grafana, Prometheus, and more - with the Connection Wizard in the Meshery UI or with mesheryctl.
 ---
 
-A [Connection]({{< ref "concepts/logical/connections/index.md" >}}) is how Meshery tracks and manages a resource - a Kubernetes cluster, a Grafana instance, a Prometheus server, and [many more]({{< ref "extensions/models/_index.md" >}}). Meshery supports registering and managing Connections through either the **Connection Wizard** in the Meshery UI or the **`mesheryctl` CLI**.
+A [Connection]({{< ref "concepts/logical/connections/index.md" >}}) is how Meshery tracks and manages a resource - a Kubernetes cluster, a Grafana instance, a Prometheus server, and [many more]({{< ref "extensions/models/_index.md" >}}). Meshery supports creating and managing Connections through either the **Connection Wizard** in the Meshery UI or the **`mesheryctl` CLI**.
 
-The **Connection Wizard** is the guided, in-UI way to register a new Connection or reconfigure an existing one, without hand-editing YAML or memorizing API payloads. Users who prefer working from the terminal or automating workflows can perform the same lifecycle operations using [`mesheryctl connection`]({{< ref "reference/references/mesheryctl/connection/_index.md" >}}).
+The **Connection Wizard** is the guided, in-UI way to create a new Connection or reconfigure an existing one, without hand-editing YAML or memorizing API payloads. Users who prefer working from the terminal or automating workflows can create and manage **Kubernetes** Connections using [`mesheryctl connection`]({{< ref "reference/references/mesheryctl/connection/_index.md" >}}). Grafana, Prometheus, and other non-Kubernetes kinds are created from the Meshery UI.
 
-This guide covers both supported connection registration workflows. For what a Connection _is_, the states it moves through, and how it is managed over time, see the canonical references:
+This guide covers both supported connection creation workflows. For what a Connection _is_, the states it moves through, and how it is managed over time, see the canonical references:
 
 - [Connections]({{< ref "concepts/logical/connections/index.md" >}}) - what Connections are and their full state lifecycle.
 - [Credentials]({{< ref "concepts/logical/credentials.md" >}}) - how Meshery authenticates to a Connection.
-- [Managing Connections]({{< ref "guides/infrastructure-management/lifecycle-management/index.md" >}}) - operating Connections after they are registered.
+- [Managing Connections]({{< ref "guides/infrastructure-management/lifecycle-management/index.md" >}}) - operating Connections after they are created.
 
 {{% alert color="info" title="Discovered vs. manually registered Connections" %}}
 Meshery learns about Connections two ways. **Managed** Connections (for example, the resources inside a Kubernetes cluster) are auto-discovered by [MeshSync]({{< ref "concepts/architecture/meshsync.md" >}}) and arrive already in the [Discovered]({{< ref "concepts/logical/connections/index.md#state-discovered" >}}) state. **Unmanaged** Connections (for example, a standalone Grafana or Prometheus) are added by you. The Connection Wizard is how you do the latter - and how you bring a Kubernetes cluster under management in the first place.
@@ -29,11 +30,11 @@ Meshery learns about Connections two ways. **Managed** Connections (for example,
 - Permission to add Connections. The wizard is permission-gated: adding a Kubernetes cluster requires the **add cluster** permission, and other Connection kinds require the **connect metrics** permission. If you lack both, the **Create Connection** button is disabled. See [Roles and Permissions]({{< ref "reference/extensibility/authorization/index.md" >}}).
 - For an authenticated Connection (most Grafana/Prometheus instances), the access token or credential you intend to use. You can paste it during the wizard or reuse an existing [Credential]({{< ref "concepts/logical/credentials.md" >}}).
 
-## Registering a Connection
+## Creating a Connection
 
-Meshery supports two workflows for registering Connections. Choose the workflow that best fits your environment.
+Meshery supports two workflows for creating Connections. Choose the workflow that best fits your environment.
 
-{{< tabs id="connection-registration-tabs" >}}
+{{< tabs id="connection-creation-tabs" >}}
 
 Meshery UI | fa fa-desktop
 
@@ -58,7 +59,7 @@ The wizard opens as a modal. The set of Connection kinds you can create is drive
        style="width:60%; max-width:800px;">
 </a>
 
-## Creating a Connection
+## Generic connection flow
 
 Most Connections follow the same generic flow. Each step is rendered from the connection definition itself, so the exact fields you see depend on the kind you choose.
 
@@ -82,9 +83,9 @@ Most Connections follow the same generic flow. Each step is rendered from the co
    - **Reuse an existing credential** - the list is filtered to credentials that match the Connection's kind, or
    - **Create a new credential** - enter the token, API key, or `username:password` and give it a name (it defaults to the Connection's name).
 
-   You may also choose to **skip credential verification**, which registers the Connection without first probing reachability - useful when the target is not reachable yet but you still want it on record. This step is omitted entirely for kinds that do not define a credential (and for Kubernetes, whose kubeconfig _is_ its credential - see below).
+   You may also choose to **skip credential verification**, which records the Connection without first probing reachability - useful when the target is not reachable yet but you still want it on record. This step is omitted entirely for kinds that do not define a credential (and for Kubernetes, whose kubeconfig _is_ its credential - see below).
 
-4. **Review & Create.** Confirm the summary and click **Create Connection**. Meshery registers the Connection and immediately attempts to connect to it.
+4. **Review & Create.** Confirm the summary and click **Create Connection**. Meshery creates the Connection and attempts to connect to it (verify reachability, verify credentials, and begin management when possible).
 
 <a href="../images/connection-wizard-review-create.png">
   <img src="../images/connection-wizard-review-create.png"
@@ -92,12 +93,10 @@ Most Connections follow the same generic flow. Each step is rendered from the co
        style="width:60%; max-width:800px;">
 </a>
 
-5. **Create the Connection.** Click **Create Connection** to register it.
-
-On success, the Connection becomes a first-class resource, listed in the [Connections]({{< ref "concepts/logical/connections/index.md" >}}) table and ready to use.
+On success, the Connection is added to the [Connections]({{< ref "concepts/logical/connections/index.md" >}}) table and is ready to use.
 
 {{% alert color="info" title="What 'Create' actually does" %}}
-Creating a Connection performs two transitions in sequence: it **registers** the Connection (recording it and its credential) and then **connects** to it (verifying reachability and beginning management). A reachable Connection lands in the [Connected]({{< ref "concepts/logical/connections/index.md#state-connected" >}}) state; if Meshery cannot reach it - or you skipped verification - it remains [Registered]({{< ref "concepts/logical/connections/index.md#state-registered" >}}). You can drive further transitions later from the Connections table.
+Creating a Connection records it (and its credential) and then tries to **connect** - verifying reachability and beginning management. A reachable Connection lands in the [Connected]({{< ref "concepts/logical/connections/index.md#state-connected" >}}) state. If Meshery cannot reach the target - or you skipped verification - the Connection remains available in the table so you can connect later (for example after the endpoint is up). You can drive further state transitions from the Connections table. See [States and the Lifecycle of Connections]({{< ref "concepts/logical/connections/index.md#states-and-the-lifecycle-of-connections" >}}).
 {{% /alert %}}
 
 ### Credentials
@@ -106,10 +105,10 @@ Credentials entered in the wizard are persisted as first-class, named [Credentia
 
 ## Importing a Kubernetes cluster
 
-Kubernetes uses a dedicated flow because a single kubeconfig can describe many clusters and its kubeconfig also serves as its credential.
+Kubernetes uses a dedicated flow because a single kubeconfig can describe many clusters and its kubeconfig also serves as its credential. The wizard separates **discovering** what is in the file from **importing** selected contexts as Connections, and separates **importing** a Connection from **connecting** to it (interacting with the cluster).
 
 1. **Choose Connection** → **Kubernetes**.
-2. **Import Kubeconfig.** Upload a kubeconfig file. Meshery parses it and lists the contexts it contains, indicating which are reachable - nothing is persisted yet.
+2. **Import Kubeconfig.** Upload a kubeconfig file, then click **Discover Contexts**. Meshery reads the contexts inside that file and checks which are reachable. A context that cannot be reached is shown as **not found** (unreachable) - discovery has not failed; Meshery simply cannot talk to that API server yet. Nothing is imported as a Connection until you continue.
 
 <a href="../images/connection-wizard-import-kubeconfig.png">
   <img src="../images/connection-wizard-import-kubeconfig.png"
@@ -117,7 +116,7 @@ Kubernetes uses a dedicated flow because a single kubeconfig can describe many c
        style="width:60%; max-width:800px;">
 </a>
 
-3. **Select contexts.** Choose which contexts to import. For each, you can override the Connection name and choose a [MeshSync deployment mode](#meshsync-deployment-mode).
+3. **Review Contexts.** Choose which clusters (contexts) to import, rename them if you like, and set each context's [MeshSync deployment mode](#meshsync-deployment-mode). Use the checkbox **Connect reachable clusters after import** when you want Meshery to start managing reachable clusters immediately. Importing records the Connection; connecting is what starts interaction with the cluster. Unreachable clusters can still be imported and connected later once the API server is reachable.
 
 <a href="../images/connection-wizard-review-contexts.png">
   <img
@@ -126,7 +125,11 @@ Kubernetes uses a dedicated flow because a single kubeconfig can describe many c
     style="width:60%; max-width:800px;">
 </a>
 
-4. **Review Import.** Confirm your selection and import. Meshery creates one Connection per selected context and reports the outcome, grouped into connected, registered, ignored, and errored buckets.
+4. Click **Import.** Meshery creates one Connection per selected context and shows the **Done** step with each name and status chip. Typical outcomes:
+
+   - **[Connected]({{< ref "concepts/logical/connections/index.md#state-connected" >}})** - reachable and connected after import (when connect-after-import is enabled).
+   - **[Discovered]({{< ref "concepts/logical/connections/index.md#state-discovered" >}})** - recorded for use; not yet connected (for example connect-after-import was off, or connect did not complete).
+   - **[Not Found]({{< ref "concepts/logical/connections/index.md#state-not-found" >}})** - Meshery could not reach the cluster (same idea as **not found** during Discover Contexts).
 
 <a href="../images/connection-wizard-import-complete.png">
   <img
@@ -152,7 +155,7 @@ Switching the mode later makes Meshery redeploy MeshSync accordingly (see [Updat
 
 ## Updating a Connection
 
-The wizard also reconfigures an already-registered Connection. From the [Connections]({{< ref "concepts/logical/connections/index.md" >}}) table, open a Connection's action menu and choose **Configure**. The wizard opens in configure mode and presents only the post-registration steps relevant to that kind.
+The wizard also reconfigures an already-created Connection. From the [Connections]({{< ref "concepts/logical/connections/index.md" >}}) table, open a Connection's action menu and choose **Configure**. The wizard opens in configure mode and presents only the post-creation steps relevant to that kind.
 
 For a Kubernetes Connection, this is where you change the [MeshSync deployment mode](#meshsync-deployment-mode). Selecting a different mode and clicking **Apply** makes Meshery undeploy MeshSync and redeploy it in the newly selected mode (Operator or Embedded) for that cluster.
 
@@ -160,11 +163,13 @@ For a Kubernetes Connection, this is where you change the [MeshSync deployment m
 
 mesheryctl | fa fa-terminal
 
-## Registering a Connection with mesheryctl
+## Creating a Connection with mesheryctl
 
 If you haven't already, install and configure `mesheryctl` by following the [Meshery CLI installation guide]({{< ref "installation/_index.md" >}}).
 
-Once mesheryctl is installed, authenticate with `mesheryctl system login` and ensure you have a valid Kubernetes context configured. You can then register and manage Connections directly from the terminal.
+Once mesheryctl is installed, authenticate with `mesheryctl system login` and ensure Meshery Server is running and you have a valid Kubernetes context configured. You can then create and manage **Kubernetes** Connections from the terminal.
+
+`mesheryctl connection create` supports Kubernetes provider types only (`aks`, `eks`, `gke`, `minikube`). To create Grafana, Prometheus, or other non-Kubernetes Connections, use the **Meshery UI** Connection Wizard.
 
 The CLI is well suited for terminal-based workflows, scripting, and automation where using the Connection Wizard is not required.
 
@@ -188,9 +193,9 @@ mesheryctl connection create --type gke
 
 If you're authenticating with a token file, use the `--token` flag. See the [`mesheryctl connection`]({{< ref "reference/references/mesheryctl/connection/_index.md" >}}) reference for supported authentication options.
 
-### Verify Registration
+### Verify Creation
 
-List registered Connections to verify that your Connection has been created.
+List Connections to verify that your Connection has been created.
 
 ```bash
 mesheryctl connection list
@@ -198,7 +203,7 @@ mesheryctl connection list
 
 ### Inspect a Connection
 
-View detailed information about a registered Connection.
+View detailed information about a Connection.
 
 ```bash
 mesheryctl connection view <connection-name|connection-id>
@@ -217,7 +222,7 @@ For additional commands, flags, supported providers, and examples, see [`meshery
 {{< /tabs >}}
 
 {{% alert color="info" title="Changing a Connection's state" %}}
-Configuring a Connection is distinct from transitioning its **state** (Connected, Ignored, Disconnected, and so on). State transitions - and the rules governing which are allowed - are driven by the connection definition and performed from the status control on the Connections table. See [States and the Lifecycle of Connections]({{< ref "concepts/logical/connections/index.md#states-and-the-lifecycle-of-connections" >}}).
+Configuring a Connection is distinct from transitioning its **state** (for example Connected, Discovered, Disconnected, Not Found, or Deleted). State transitions - and the rules governing which are allowed - are driven by the connection definition and performed from the status control on the Connections table. See [States and the Lifecycle of Connections]({{< ref "concepts/logical/connections/index.md#states-and-the-lifecycle-of-connections" >}}).
 {{% /alert %}}
 
 <!-- The Telemetry pages (guides/telemetry/*) ship in meshery/meshery#20161. Until that
@@ -226,7 +231,7 @@ Configuring a Connection is distinct from transitioning its **state** (Connected
      links once the Telemetry pages exist on master. -->
 ## Using Connections for Telemetry
 
-Grafana and Prometheus Connections you register with the wizard power Meshery's [Telemetry](https://docs.meshery.io/guides/telemetry/) views. Once such a Connection reaches the **Connected** or **Registered** state, it becomes selectable in the Telemetry connection picker, where you can:
+Grafana and Prometheus Connections you create with the wizard power Meshery's [Telemetry](https://docs.meshery.io/guides/telemetry/) views. Once such a Connection reaches the **Connected** state (or is otherwise available for use), it becomes selectable in the Telemetry connection picker, where you can:
 
 - Browse and render your existing dashboards - see [Grafana Dashboards](https://docs.meshery.io/guides/telemetry/grafana-dashboards).
 - Explore metrics and save PromQL panels - see [Prometheus Metrics](https://docs.meshery.io/guides/telemetry/prometheus-metrics).

@@ -10,7 +10,7 @@ weight: 15
 
 **Connections are schema-driven.** A Connection's structure, identity, lifecycle, and the forms Meshery renders for it are declared in a **connection definition** that conforms to the [Connection schema](https://github.com/meshery/schemas/tree/master/schemas/constructs/v1beta3/connection) (`connections.meshery.io/v1beta3`) in [`meshery/schemas`](https://github.com/meshery/schemas). Before contributing, familiarize yourself with that schema and read [Contributing to Schemas]({{< ref "project/contributing/contributing-schemas.md" >}}) for the development workflow.
 
-This guide explains how to author a connection definition so that Meshery understands a new kind of [Connection]({{< ref "concepts/logical/connections/index.md" >}}) and offers it in the [Connection Wizard]({{< ref "guides/infrastructure-management/registering-a-connection.md" >}}). In most cases, **authoring a JSON definition is all you need** - no UI or server code.
+This guide explains how to author a connection definition so that Meshery understands a new kind of [Connection]({{< ref "concepts/logical/connections/index.md" >}}) and offers it in the [Connection Wizard]({{< ref "guides/infrastructure-management/creating-a-connection.md" >}}). In most cases, **authoring a JSON definition is all you need** - no UI or server code.
 
 ## What is a connection definition?
 
@@ -146,7 +146,7 @@ For example, the shipped definitions live under [`models/meshery-core/.../connec
    | `PUT`    | `/api/registry/connections/{id}`                | Update a definition                    |
    | `DELETE` | `/api/registry/connections/{id}`                | Remove a definition                    |
 
-2. **Consumption.** The [Connection Wizard]({{< ref "guides/infrastructure-management/registering-a-connection.md" >}}) lists every registered definition as a creatable kind and renders its `connectionSchema` and `credentialSchema` as wizard steps. **Register your definition and it appears in the wizard automatically** - no UI changes required.
+2. **Consumption.** The [Connection Wizard]({{< ref "guides/infrastructure-management/creating-a-connection.md" >}}) lists every registered definition as a creatable kind and renders its `connectionSchema` and `credentialSchema` as wizard steps. **Register your definition and it appears in the wizard automatically** - no UI changes required.
 
 {{% alert color="info" title="Verify it appears" %}}
 After registering, open the Connection Wizard (**Connections → Create Connection**) and confirm your kind is listed with its icon, that the Configure and Associate Credential steps render your schemas, and that creating a Connection drives the states you declared in the `transitionMap`.
