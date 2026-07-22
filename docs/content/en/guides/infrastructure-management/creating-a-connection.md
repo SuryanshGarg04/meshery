@@ -93,7 +93,7 @@ Most Connections follow the same generic flow. Each step is rendered from the co
        style="width:60%; max-width:800px;">
 </a>
 
-On success, the Connection is added to the [Connections]({{< ref "concepts/logical/connections/index.md" >}}) table and is ready to use.
+5. **Done.** The Connection is added to the [Connections]({{< ref "concepts/logical/connections/index.md" >}}) table and is ready to use.
 
 {{% alert color="info" title="What 'Create' actually does" %}}
 Creating a Connection records it (and its credential) and then tries to **connect** - verifying reachability and beginning management. A reachable Connection lands in the [Connected]({{< ref "concepts/logical/connections/index.md#state-connected" >}}) state. If Meshery cannot reach the target - or you skipped verification - the Connection remains available in the table so you can connect later (for example after the endpoint is up). You can drive further state transitions from the Connections table. See [States and the Lifecycle of Connections]({{< ref "concepts/logical/connections/index.md#states-and-the-lifecycle-of-connections" >}}).
