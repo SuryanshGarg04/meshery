@@ -23,12 +23,17 @@ jobs:
         if: ${{ github.event_name == 'pull_request' }}
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 1
+          fetch-depth: 0
+      - name: Determine merge-base
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          echo "MERGE_BASE=$(git merge-base HEAD origin/${{ github.base_ref }})" >> $GITHUB_ENV
       - name: Checkout base branch
         if: ${{ github.event_name == 'pull_request' }}
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.pull_request.base.sha }}
+          ref: ${{ env.MERGE_BASE }}
           path: .baseline
           fetch-depth: 1
           persist-credentials: false
@@ -44,10 +49,20 @@ jobs:
           go-version-file: go.mod
 
       - name: Build Error Utility
+        shell: bash
         run: |
-          go get github.com/meshery/meshkit/cmd/errorutil@master
-          go build -o ~/errorutil github.com/meshery/meshkit/cmd/errorutil
+          set -euo pipefail
 
+          rm -rf "$RUNNER_TEMP/meshkit"
+          mkdir -p "$RUNNER_TEMP/meshkit"
+
+          git clone --no-checkout --filter=blob:none https://github.com/meshery/meshkit.git "$RUNNER_TEMP/meshkit"
+          cd "$RUNNER_TEMP/meshkit"
+
+          git fetch --depth 1 origin 42fac19e642bf7cff9363593beb6afb3182752ec
+          git checkout --detach 42fac19e642bf7cff9363593beb6afb3182752ec
+
+          GOBIN="$HOME" go install ./cmd/errorutil
       - name: Run Utility For Meshery Server
         uses: ./.github/actions/errorutil-runner
         with:
