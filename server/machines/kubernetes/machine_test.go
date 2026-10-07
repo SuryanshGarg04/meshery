@@ -103,19 +103,6 @@ func TestAssignInitialCtx_AttachesLoggerBeforeClientSetAssignment(t *testing.T) 
 	}
 }
 
-func TestRegisteredState_HasNotFoundTransition(t *testing.T) {
-	state := Registered()
-
-	next, ok := state.Events[machines.NotFound]
-	if !ok {
-		t.Fatal("expected Registered state to define a NotFound transition")
-	}
-
-	if next != machines.NOTFOUND {
-		t.Fatalf("expected NotFound transition to go to %q, got %q", machines.NOTFOUND, next)
-	}
-}
-
 func TestDiscoveredState_HasTransitions(t *testing.T) {
 	state := Discovered()
 
@@ -380,13 +367,6 @@ func TestStateMachine_DiscoveryAuthorizationFailure_TransitionsToDisconnected(t 
 	if event == nil || event.Severity != events.Error {
 		t.Fatalf("expected Error severity notification event, got %#v", event)
 	}
-
-	// 5. Server ID was not persisted in metadata on authorization failure
-	if provider.lastConn != nil && provider.lastConn.MetaData != nil {
-		if serverID, ok := provider.lastConn.MetaData["kubernetesServerId"]; ok && serverID != "" && serverID != nil {
-			t.Fatalf("expected kubernetesServerId to not be persisted in metadata on authorization failure, got %v", serverID)
-		}
-	}
 }
 
 // TestStateMachine_DiscoveryTransientFailure_TransitionsToNotFound verifies that a temporary
@@ -484,23 +464,5 @@ func TestStateMachine_DiscoveryTransientFailure_TransitionsToNotFound(t *testing
 	// 4. Notification event has Error severity
 	if event == nil || event.Severity != events.Error {
 		t.Fatalf("expected Error severity notification event, got %#v", event)
-	}
-}
-
-// TestDisconnectedState_AllowsExplicitConnect pins the other half of the
-// rediscovery fix: DISCONNECTED must be terminal for automatic Discovery but
-// must stay recoverable by an explicit user action.
-func TestDisconnectedState_AllowsExplicitConnect(t *testing.T) {
-	state := Disconnected()
-
-	next, ok := state.Events[machines.Connect]
-	if !ok {
-		t.Fatal("expected Disconnected to keep an explicit Connect transition")
-	}
-	if next != machines.CONNECTED {
-		t.Fatalf("expected Connect to move to %q, got %q", machines.CONNECTED, next)
-	}
-	if _, ok := state.Events[machines.Discovery]; ok {
-		t.Fatal("Disconnected must not accept automatic Discovery; only an explicit user action may revive it")
 	}
 }

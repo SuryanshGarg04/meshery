@@ -396,33 +396,26 @@ type dataHandlerToClusterID struct {
 	clusterID string
 }
 
-// shouldDriveDiscovery reports whether the middleware may start a background
-// Discovery for the connection backing a Kubernetes context.
+// shouldDriveDiscovery reports whether this middleware may re-drive Discovery for a
+// connection. ResetState() rewinds the machine to InitialState before every
+// SendEvent(Discovery), so without this check a connection already parked in
+// DISCONNECTED is rediscovered - and the cluster re-probed - on every request
+// (issue #14083). connections.ShouldConnectionBeManaged is the single authority on
+// which statuses may be managed; the kubeconfig-discovery path applies it too.
 //
-// K8sFSMMiddleware calls StateMachine.ResetState() before every
-// SendEvent(machines.Discovery). ResetState() rewinds the machine to
-// machines.InitialState, and Initial() maps Discovery -> DISCOVERED, so a
-// connection the state machine already moved to a terminal state - notably
-// DISCONNECTED after a 401/403 from the Kubernetes API - is rediscovered anyway
-// and re-queries the cluster on every single request (issue #14083). The state
-// machine cannot defend itself against its own reset, so the caller has to.
-//
-// connections.ShouldConnectionBeManaged is the single authority on which
-// statuses may be managed, and DiscoverK8SContextFromKubeConfig already applies
-// it to the kubeconfig-discovery path. Consulting it here makes both discovery
-// paths obey the same rule rather than spelling out status names twice.
-//
-// A lookup failure returns true: a momentarily unreachable provider must not
-// silently stop Kubernetes management, and SendEvent performs - and reports on -
-// the same lookup itself.
+// A missing connection is not manageable. Any other lookup failure proceeds, so a
+// momentarily unreachable provider does not silently stop Kubernetes management.
 func shouldDriveDiscovery(h *Handler, provider models.Provider, token string, connectionID uuid.UUID) bool {
-	conn, _, err := provider.GetConnectionByID(token, connectionID)
+	conn, status, err := provider.GetConnectionByID(token, connectionID)
 	if err != nil {
+		if status == http.StatusNotFound {
+			return false
+		}
 		h.log.Debugf("could not read connection %s to decide whether discovery may run; proceeding: %v", connectionID, err)
 		return true
 	}
 	if conn == nil {
-		return true
+		return false
 	}
 	return connections.ShouldConnectionBeManaged(*conn)
 }
@@ -468,8 +461,6 @@ func K8sFSMMiddleware(ctx context.Context, h *Handler, provider models.Provider,
 		if !mhelpers.HasMachineContext(inst) {
 			continue
 		}
-		// A connection the connection manager no longer considers manageable must
-		// not be re-driven through discovery; see shouldDriveDiscovery.
 		if !shouldDriveDiscovery(h, provider, token, connectionUUID) {
 			continue
 		}
