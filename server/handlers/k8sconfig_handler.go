@@ -538,11 +538,11 @@ func (h *Handler) K8sRegistrationHandler(w http.ResponseWriter, req *http.Reques
 // parkedK8sContexts returns a predicate that is true for a kubeconfig context
 // whose persisted connection is no longer manageable (DISCONNECTED after a
 // rejected credential, IGNORED by the user, ...). Greedy discovery must leave
-// those alone - probing them again on every request is exactly the loop behind
-// issue #14083, and only an explicit user action may revive them. Contexts in
-// a manageable status (including NOTFOUND, which is meant to be retried) and
-// unknown contexts are not parked. On a lookup failure nothing is parked, so a
-// momentarily unreachable provider degrades to today's behaviour.
+// those alone rather than re-probing them on every request; only an explicit user
+// action (such as clicking Connect) may revive them. Contexts in a manageable
+// status (including NOTFOUND, which is meant to be retried) and unknown contexts
+// are not parked. On a lookup failure nothing is parked, so a momentarily
+// unreachable provider degrades to standard discovery behavior.
 func (h *Handler) parkedK8sContexts(token string, prov models.Provider) func(*models.K8sContext) bool {
 	parked := map[string]bool{}
 	for page := 0; ; page++ {
@@ -575,13 +575,14 @@ func (h *Handler) parkedK8sContexts(token string, prov models.Provider) func(*mo
 func (h *Handler) DiscoverK8SContextFromKubeConfig(userID string, token string, prov models.Provider) ([]*models.K8sContext, error) {
 	var contexts []*models.K8sContext
 	// userUUID := uuid.FromStringOrNil(userID)
-	skip := h.parkedK8sContexts(token, prov)
 
 	// Get meshery instance ID
 	mid, ok := viper.Get("INSTANCE_ID").(*core.Uuid)
 	if !ok {
 		return contexts, models.ErrMesheryInstanceID
 	}
+
+	skip := h.parkedK8sContexts(token, prov)
 
 	// Attempt to get kubeconfig from the filesystem
 	if h.config == nil {

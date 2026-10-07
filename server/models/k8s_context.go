@@ -181,7 +181,7 @@ func NewK8sContextWithServerID(
 	// and the FSM's DiscoverAction do, so a rejected credential is classified the
 	// same way everywhere. A 401/403 is an answer from a reachable API server, not
 	// an unreachable cluster: return the context flagged instead of dropping it, so
-	// the caller can register it and the user can act on it (issue #14083).
+	// the caller can register it and the user can act on it.
 	if err := ctx.AssignServerID(handler); err != nil {
 		if k8serrors.IsForbidden(err) || k8serrors.IsUnauthorized(err) {
 			ctx.Unauthorized = true

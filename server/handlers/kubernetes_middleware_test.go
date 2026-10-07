@@ -1,8 +1,8 @@
 package handlers
 
-// Integration coverage for issue #14083: a Kubernetes cluster that rejects
-// Meshery's credential must be probed once, parked, and never probed again
-// until the user acts.
+// Integration coverage verifying that a Kubernetes cluster that rejects
+// Meshery's credential is probed once, parked in DISCONNECTED, and never
+// probed again on idle requests until an explicit user action occurs.
 //
 // The test drives the real middleware pair - KubernetesMiddleware (greedy
 // kubeconfig import) followed by K8sFSMMiddleware (FSM re-drive) - against a
@@ -174,7 +174,7 @@ func newFakeAPIServer(t *testing.T, code int) (*httptest.Server, *apiStats) {
 				http.StatusServiceUnavailable: "ServiceUnavailable",
 			}[code]
 			w.WriteHeader(code)
-			fmt.Fprintf(w, `{"kind":"Status","apiVersion":"v1","metadata":{},"status":"Failure","message":%q,"reason":%q,"code":%d}`, reason, reason, code)
+			_, _ = fmt.Fprintf(w, `{"kind":"Status","apiVersion":"v1","metadata":{},"status":"Failure","message":%q,"reason":%q,"code":%d}`, reason, reason, code)
 		case "/version":
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte(`{"major":"1","minor":"30","gitVersion":"v1.30.0"}`))
@@ -274,8 +274,8 @@ func drain(st *apiStats, p *k8sProviderStub) {
 	}
 }
 
-// TestKubernetesMiddleware_DoesNotReprobeParkedClusters is the regression test for
-// issue #14083. The 503 rows are the control: a transient failure must stay
+// TestKubernetesMiddleware_DoesNotReprobeParkedClusters verifies that parked clusters
+// are not re-probed on idle requests. The 503 rows are the control: a transient failure must stay
 // retryable, so only a rejected credential may park a connection.
 func TestKubernetesMiddleware_DoesNotReprobeParkedClusters(t *testing.T) {
 	for _, tc := range []struct {
@@ -352,7 +352,7 @@ func TestKubernetesMiddleware_DoesNotReprobeParkedClusters(t *testing.T) {
 				return
 			}
 			if idle != 0 {
-				t.Errorf("idle requests probed the cluster %d times; issue #14083 requires none", idle)
+				t.Errorf("idle requests probed the cluster %d times; want 0 probes for parked connection", idle)
 			}
 			if reimports := provider.saves.Load() - savesBefore; reimports != 0 {
 				t.Errorf("idle requests re-imported the context %d times", reimports)
@@ -361,8 +361,8 @@ func TestKubernetesMiddleware_DoesNotReprobeParkedClusters(t *testing.T) {
 			// An explicit reconnect must probe again: the park is not permanent, it
 			// only withholds automatic rediscovery. The cluster answers the fresh
 			// probe with a transient failure, which keeps this to one DisconnectAction
-			// for the whole subtest - a second one would race inside
-			// MesheryControllersHelper, which is unsynchronised (see PR notes).
+			// for the whole subtest - driving a second disconnect would trigger
+			// unsynchronized concurrent access inside MesheryControllersHelper.
 			st.code.Store(http.StatusServiceUnavailable)
 			provider.connect()
 			if probes := syncRequest(ctx, t, h, provider, user, st); probes != 1 {

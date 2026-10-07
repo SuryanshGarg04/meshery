@@ -43,7 +43,8 @@ func (da *DiscoverAction) Execute(ctx context.Context, machineCtx interface{}, d
 		meshkitErr := models.ErrUnreachableKubeAPI(err, k8sContext.Server)
 		if k8serrors.IsForbidden(err) || k8serrors.IsUnauthorized(err) {
 			return machines.Disconnect, eventBuilder.WithDescription(fmt.Sprintf("Could not assign server id, disconnecting context %s", k8sContext.Name)).WithMetadata(map[string]interface{}{
-				"error": meshkitErr,
+				"error":       meshkitErr,
+				"remediation": "Update or repair cluster credentials, then click Connect in Connection Management to re-establish connection.",
 			}).Build(), err
 		}
 		return machines.NotFound, eventBuilder.WithDescription(fmt.Sprintf("Could not assign server id, skipping context %s", k8sContext.Name)).WithMetadata(map[string]interface{}{

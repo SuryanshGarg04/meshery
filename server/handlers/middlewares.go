@@ -399,8 +399,8 @@ type dataHandlerToClusterID struct {
 // shouldDriveDiscovery reports whether this middleware may re-drive Discovery for a
 // connection. ResetState() rewinds the machine to InitialState before every
 // SendEvent(Discovery), so without this check a connection already parked in
-// DISCONNECTED is rediscovered - and the cluster re-probed - on every request
-// (issue #14083). connections.ShouldConnectionBeManaged is the single authority on
+// DISCONNECTED is rediscovered - and the cluster re-probed - on every request.
+// connections.ShouldConnectionBeManaged is the single authority on
 // which statuses may be managed; the kubeconfig-discovery path applies it too.
 //
 // A missing connection is not manageable. Any other lookup failure proceeds, so a
